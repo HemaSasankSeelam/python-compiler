@@ -268,10 +268,11 @@ class CompilerApp:
 
             tag_data = []
             for tag_name in self.main.tag_names():
-                if tag_name not in ["sel", "found"]:
+                if tag_name not in ["sel", "found"] and self.main.tag_ranges(tagName=tag_name):
+                    
                     fg_color = self.main.tag_cget(tagName=tag_name, option="foreground")
-                    tag_range = self.main.tag_ranges(tagName=tag_name)
-                    tag_data.append({"tag": tag_name, "range": tag_range, "fg": fg_color})
+                    index1,index2 = self.main.tag_ranges(tagName=tag_name)
+                    tag_data.append({"tag": tag_name, "range": (str(index1),str(index2)), "fg": fg_color})
 
             with open(json_file_path, "w") as json_file:
                 json.dump(obj=tag_data, fp=json_file)
