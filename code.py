@@ -344,7 +344,7 @@ class CompilerApp:
             index2 = self.main.index(SEL_LAST)
         except Exception as e:
             selected_text = None
-            self.print_to_terminal(str(e))
+            print(str(e))
 
         rgb_color, hex_color = colorchooser.askcolor(title="Select Color")
         
@@ -447,7 +447,7 @@ class CompilerApp:
                 json.dump(obj=tag_data, fp=json_file)
 
         except Exception as e:
-            self.print_to_terminal(str(e))
+            print(str(e))
 
     def generate_json_file(self, code_file_path: str) -> str:
         """
@@ -487,16 +487,7 @@ class CompilerApp:
                     
             self.main.see(END)
         except Exception as e:
-            self.print_to_terminal(str(e))
-
-    def print_to_terminal(self, message: str) -> None:
-        """
-        Prints a message to the terminal text box.
-        """
-        self.terminal.configure(state=NORMAL)
-        self.terminal.insert(index=END, text=f">> {message}\n\n")
-        self.terminal.see(index=END)
-        self.terminal.configure(state=DISABLED)
+            print(str(e))
 
 if __name__ == "__main__":
     CompilerApp()
