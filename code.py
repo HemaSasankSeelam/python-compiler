@@ -1,14 +1,14 @@
 from tkinter import *
 import tkinter as tk
 import pymsgbox
-from tkinter import messagebox
 from tkinter import filedialog, colorchooser
 from datetime import datetime
 from pathlib import Path
 import re
 import json
 import io
-import sys
+from contextlib import redirect_stdout
+from tkinter import simpledialog
 import os
 import customtkinter 
 from tklinenums import TkLineNumbers
@@ -308,7 +308,7 @@ class CompilerApp:
             index2 = int(self.main.index(SEL_LAST).split(".")[0]) + 1
         except Exception as e:
             index1 = int(current_row_index)
-            index2 = current_row_index + 1
+            index2 = int(current_row_index) + 1
         finally:
             for i in range(index1, index2):
                 text = self.main.get(index1=f"{i}.0", index2=f"{i}.end")
@@ -319,28 +319,33 @@ class CompilerApp:
                     self.main.insert(index=f"{i}.0", text="# ")
             return "break"
 
+
     def run_code(self) -> None:
         """
         Executes the code written in the main text box and displays the output in the terminal text box.
         """
+ 
         code_text = self.main.get(index1="1.0", index2=END)
         
-        # Redirect stdout to capture print statements
-        old_stdout = sys.stdout
-        redirected_output = sys.stdout = io.StringIO()
+        captured_output = io.StringIO()
         try:
-            exec(code_text)
+            with redirect_stdout(captured_output):
+                exec(code_text, {'__name__': '__main__',"input":self.custom_input})
         except Exception as e:
-            self.print_to_terminal(str(e))
-        else:
-            self.terminal.configure(state=NORMAL)
-            self.terminal.insert(index=END, text=f">> {redirected_output.getvalue()}\n")
-            self.terminal.see(index=END)
-            self.terminal.configure(state=DISABLED)
-        
-        # Reset stdout redirect.
-        sys.stdout = old_stdout
+            captured_output.write(str(e))
+        finally:
+            # Display the captured output in the terminal
+            self.print_to_terminal(captured_output.getvalue())
 
+    def custom_input(self, prompt=''):
+        """
+        Custom input function to capture user input through a dialog box.
+        """
+        result = simpledialog.askstring(title="Input", prompt=prompt)
+
+        if result is None:  # If the user cancels the input dialog
+            result = ''
+        return result
     def clear_terminal(self) -> None:
         """
         Clears the terminal text box.
@@ -506,6 +511,7 @@ class CompilerApp:
                     self.main.tag_add(tagName=tag_name,index1=index1,index2=index2)
                     self.main.tag_config(tagName=tag_name, foreground=fg_color)
 
+            self.main.see(END)
         except Exception as e:
             self.print_to_terminal(str(e))
 
