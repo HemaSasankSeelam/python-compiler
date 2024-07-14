@@ -1,14 +1,13 @@
 from tkinter import *
 import tkinter as tk
 import pymsgbox
+from tkinter import messagebox
 from tkinter import filedialog, colorchooser
 from datetime import datetime
 from pathlib import Path
 import re
 import json
-import io
-from contextlib import redirect_stdout
-from tkinter import simpledialog
+import ctypes
 import os
 import customtkinter 
 from tklinenums import TkLineNumbers
@@ -93,10 +92,7 @@ class CompilerApp:
         customtkinter.CTkButton(master=self.root, width=100, height=30, corner_radius=20, text="Replace All", command=lambda: self.replace(replace_all=True)).place(x=1320, y=2)
         customtkinter.CTkButton(master=self.root, width=100, height=30, corner_radius=20, text="Clear Terminal", command=self.clear_terminal).place(x=1420, y=2)
 
-        self.panned_window = PanedWindow(master=self.root, orient='horizontal', width=1480, height=808, background="#808080")
-        self.panned_window.place(x=55, y=35)
-
-        self.main = customtkinter.CTkTextbox(master=self.panned_window, width=1100, height=800, corner_radius=15,
+        self.main = customtkinter.CTkTextbox(master=self.root, width=1480, height=808, corner_radius=15,
                                              border_color="#50C777", bg_color="#50C777", text_color="#4fb5bd", border_width=5, 
                                              font=("TimesNewRoman", 20), activate_scrollbars=True, undo=True, wrap='none')
         self.main.insert(index=1.0, text='print("Hello world")')
@@ -107,19 +103,11 @@ class CompilerApp:
         self.main.bind("<Shift-Tab>",self.hot_key_shift_tab)
         self.main.bind("<Return>",self.enter_key)
         self.main.bind("<<Paste>>",self.on_paste)
-        self.main.pack()
-        self.panned_window.add(self.main)
+        self.main.place(x=55, y=35)
 
         self.line_numbers = TkLineNumbers(master=self.root, textwidget=self.main)
         self.line_numbers.place(x=0, y=55,width=55,height=785)
         self.every_100_ms()
-
-        self.terminal = customtkinter.CTkTextbox(master=self.panned_window, width=545, height=800, corner_radius=15,
-                                                 border_color="#A5C750", border_width=5, bg_color="#A5C750",
-                                                 text_color="#FFFFFF", font=("TimesNewRoman", 20), state=DISABLED)
-        self.terminal.pack()
-
-        self.panned_window.add(self.terminal)
 
         self.root.bind("<Control-s>",self.save)
         self.root.bind("<Control-o>",self.open)
@@ -319,41 +307,27 @@ class CompilerApp:
                     self.main.insert(index=f"{i}.0", text="# ")
             return "break"
 
-
     def run_code(self) -> None:
         """
         Executes the code written in the main text box and displays the output in the terminal text box.
         """
- 
         code_text = self.main.get(index1="1.0", index2=END)
+
+        hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+        if hwnd != 0:
+            # Bring the window to the foreground
+            ctypes.windll.user32.ShowWindow(hwnd, 5)  # SW_SHOW
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
         
-        captured_output = io.StringIO()
-        try:
-            with redirect_stdout(captured_output):
-                exec(code_text, {'__name__': '__main__',"input":self.custom_input})
-        except Exception as e:
-            captured_output.write(str(e))
-        finally:
-            # Display the captured output in the terminal
-            self.print_to_terminal(captured_output.getvalue())
+        print(">> ",end="")
+        exec(code_text)
+        print()
 
-    def custom_input(self, prompt=''):
-        """
-        Custom input function to capture user input through a dialog box.
-        """
-        result = simpledialog.askstring(title="Input", prompt=prompt)
-
-        if result is None:  # If the user cancels the input dialog
-            result = ''
-        return result
     def clear_terminal(self) -> None:
         """
         Clears the terminal text box.
         """
-        self.terminal.configure(state=NORMAL)
-        self.terminal.delete(index1="1.0", index2=END)
-        self.terminal.configure(state=DISABLED)
-
+        os.system("cls")
     def clear_code(self) -> None:
         """
         Clears the main text box.
@@ -510,7 +484,7 @@ class CompilerApp:
 
                     self.main.tag_add(tagName=tag_name,index1=index1,index2=index2)
                     self.main.tag_config(tagName=tag_name, foreground=fg_color)
-
+                    
             self.main.see(END)
         except Exception as e:
             self.print_to_terminal(str(e))
